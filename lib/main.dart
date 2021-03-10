@@ -30,9 +30,7 @@ const ICON_SIZE = 48.0;
 
 class _MyHomePageState extends State<MyHomePage> {
   TextEditingController controller = TextEditingController();
-  String filter = "";
   Iterable<String> iconKeys = ic.icons.keys;
-  bool grow = false;
   int previousLength = 0;
 
   @override
@@ -42,12 +40,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (grow && filter.isNotEmpty) {
-      final List<String> filterTerms = filter.split(" ");
-      iconKeys = iconKeys.where((String key) => filterTerms
-          .map((String term) => key.contains(term))
-          .any((bool result) => result));
-    }
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -64,6 +56,7 @@ class _MyHomePageState extends State<MyHomePage> {
               child: TextField(
                 style: TextStyle(color: Colors.white),
                 cursorColor: Colors.white,
+                controller: controller,
                 decoration: InputDecoration(
                   hintText: "Search for icon",
                   hintStyle: TextStyle(color: Colors.white54),
@@ -94,22 +87,14 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                 ),
                 onChanged: (String text) {
-                  final String trimmed = text.trim();
-                  previousLength = filter.length;
-                  if (previousLength < trimmed.length) {
-                    grow = true;
-                    if (trimmed != filter) {
-                      setState(() {});
+                  final String filter = text.trim();
+                  if (filter.length != previousLength) {
+                    if (previousLength > filter.length) {
+                      iconKeys = ic.icons.keys;
                     }
-                  } else {
-                    if (grow) {
-                      grow = false;
-                      setState(() {
-                        iconKeys = ic.icons.keys;
-                      });
-                    }
+                    previousLength = filter.length;
+                    Future.delayed(Duration.zero).then((_) => _filter());
                   }
-                  filter = trimmed;
                 },
               ),
             ),
@@ -121,7 +106,7 @@ class _MyHomePageState extends State<MyHomePage> {
         children: [
           Expanded(
             child: GridView.builder(
-              itemCount: iconKeys.length,
+              itemCount: iconKeys.length ?? 0,
               gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                 maxCrossAxisExtent: CONTAINER_SIZE,
                 crossAxisSpacing: 8,
@@ -147,6 +132,18 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  Future<void> _filter() async {
+    final String filter = controller.text.trim();
+
+    if (filter.isNotEmpty) {
+      final List<String> filterTerms = filter.split(" ");
+      iconKeys = iconKeys.where((String key) => filterTerms
+          .map((String term) => key.contains(term))
+          .every((bool result) => result));
+    }
+    setState(() {});
+  }
+
   Widget getIcon(String iconKey) => Column(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
@@ -154,7 +151,7 @@ class _MyHomePageState extends State<MyHomePage> {
             ic.icons[iconKey],
             size: ICON_SIZE,
           ),
-          Text(
+          SelectableText(
             iconKey,
             textAlign: TextAlign.center,
           ),
