@@ -54,6 +54,7 @@ class _MyHomePageState extends State<MyHomePage> {
             SizedBox(width: 32),
             Expanded(
               child: TextField(
+                autofocus: true,
                 style: TextStyle(color: Colors.white),
                 cursorColor: Colors.white,
                 controller: controller,
